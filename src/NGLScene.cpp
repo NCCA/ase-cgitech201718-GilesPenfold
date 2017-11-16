@@ -28,6 +28,9 @@ NGLScene::NGLScene()
   m_agent1.reset(new Agent("python/agent1.py",main,dict));
   m_agent2.reset(new Agent("python/agent2.py",main,dict));
 
+  m_flock.reset(new Flock());
+  m_flock->Add(100);
+
   startTimer(20);
 }
 
@@ -66,13 +69,13 @@ void NGLScene::initializeGL()
   (*shader)["nglDiffuseShader"]->use();
 
   shader->setUniform("Colour",1.0f,1.0f,1.0f,1.0f);
-  shader->setUniform("lightPos",1.0f,1.0f,1.0f);
+  shader->setUniform("lightPos",0.0f,0.0f,100.0f);
   shader->setUniform("lightDiffuse",1.0f,1.0f,1.0f,1.0f);
   // the shader will use the currently active material and light0 so set them
   // Now we will create a basic Camera from the graphics library
   // This is a static camera so it only needs to be set once
   // First create Values for the camera position
-  ngl::Vec3 from(0.0f,1.0f,20.0f);
+  ngl::Vec3 from(0.0f,1.0f,-100.0f);
   ngl::Vec3 to(0.0f,0.0f,0.0f);
   ngl::Vec3 up(0.0f,1.0f,0.0f);
   // now load to our new camera
@@ -109,9 +112,15 @@ void NGLScene::paintGL()
   // draw
   shader->setUniform("Colour",1.0f,1.0f,0.0f,1.0f);
 
-  m_agent1->draw(m_mouseGlobalTX,&m_cam);
-  shader->setUniform("Colour",0.8f,0.8f,0.8f,1.0f);
-  m_agent2->draw(m_mouseGlobalTX,&m_cam);
+  //m_agent1->draw(m_mouseGlobalTX,&m_cam);
+  //shader->setUniform("Colour",0.8f,0.8f,0.8f,1.0f);
+  //m_agent2->draw(m_mouseGlobalTX,&m_cam);
+
+  m_flock->Draw(&m_cam, shader);
+
+
+
+
 
 }
 
@@ -230,6 +239,8 @@ void NGLScene::timerEvent(QTimerEvent *)
 {
   m_agent1->update();
   m_agent2->update();
+
+  m_flock->Run();
 
   update();
 }

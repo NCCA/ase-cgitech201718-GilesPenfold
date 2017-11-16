@@ -8,6 +8,7 @@
 #include "WindowParams.h"
 #include <QOpenGLWindow>
 #include <memory>
+#include <Flock.h>
 //----------------------------------------------------------------------------------------------------------------------
 /// @file NGLScene.h
 /// @brief this class inherits from the Qt OpenGLWindow and allows us to use NGL to draw OpenGL
@@ -72,6 +73,8 @@ private:
     /// @brief a single agent with a python script attached
     //----------------------------------------------------------------------------------------------------------------------
     std::unique_ptr <Agent> m_agent2;
+
+    std::unique_ptr <Flock> m_flock;
 
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief method to load transform matrices to the shader

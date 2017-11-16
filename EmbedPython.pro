@@ -23,11 +23,15 @@ CONFIG-=app_bundle
 # Auto include all .cpp files in the project src directory (can specifiy individually if required)
 SOURCES+= $$PWD/src/main.cpp \
 					$$PWD/src/Agent.cpp \
-					$$PWD/src/NGLScene.cpp
+					$$PWD/src/NGLScene.cpp \
+    include/Boid.cpp \
+    src/Flock.cpp
 # same for the .h files
 HEADERS+= $$PWD/include/Agent.h \
           $$PWD/include/NGLScene.h \
-          $$PWD/include/WindowParam.h
+          $$PWD/include/WindowParam.h \
+    include/Boid.h \
+    include/Flock.h
 # and add the include dir into the search path for Qt and make
 INCLUDEPATH +=./include
 # where our exe is going to live (root of project)
@@ -37,6 +41,7 @@ OTHER_FILES+= python/*.py \
 							README.md
 # were are going to default to a console app
 CONFIG += console
+CONFIG += c++14
 # note each command you add needs a ; as it will be run as a single line
 # first check if we are shadow building or not easiest way is to check out against current
 !equals(PWD, $${OUT_PWD}){
