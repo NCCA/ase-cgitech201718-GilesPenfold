@@ -55,3 +55,10 @@ Maximum Initial Tiredness Rate: Adjust the maximum rate at which a boid tires wh
 
 Maximum Initial Recovery Rate: Adjust the maximum rate at which a boid will recover energy after having become exhausted. The higher this number, the faster a boid will be able to recover energy.
 
+
+### In-Depth Changes
+
+There are a number of further global variables that can be changed within the boid2.py class that are not found within the GUI. There are commented within the code to explain what they do. The default values work well for the simulation, so adjust with care.
+
+
+
