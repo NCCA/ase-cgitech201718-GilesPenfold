@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+##################################################################################
+# Giles Penfold - s5005745 Genetic Flocking Simulation, MSc CAVE ASE 2017/8
+# Derived from the YABI implementation of flocking and processing.org
+# Base layout from the NGL library Python example
+####################### IMPORTS ##################################################
 from PyQt5.QtGui import QOpenGLWindow,QSurfaceFormat
 from PyQt5.QtWidgets import *
 from  PyQt5.QtCore import *
@@ -11,10 +16,17 @@ from OpenGL.GL import *
 import flock
 import time
 
+###################### END IMPORTS ################################################
+
+# This will cap how often the flocking simulation will run update methods
 updateframes = 5
 
 
-
+###
+# NGLWIDGET
+# Creates a widget within QT with which to hold the OpenGL context
+# As well as the flock itself and any other QT events
+###
 class NGLWidget(QOpenGLWidget):
     def __init__(self, parent=None):
         super(NGLWidget, self).__init__(parent)
@@ -40,6 +52,10 @@ class NGLWidget(QOpenGLWidget):
         self.startTimer(updateframes)
         self.start = False
 
+    ###
+    # INITIALIZEGL
+    # Initializes OpenGL and NGL, sets up shaders, lighting and camera position
+    ###
     def initializeGL(self):
         self.makeCurrent()
         NGLInit.instance()
@@ -62,12 +78,17 @@ class NGLWidget(QOpenGLWidget):
         prim.createDisk("disc",0.5,8)
 
 
-
+    ###
+    # UPDATE
+    # Updates the system every frame
+    ###
     def update(self):
         super(QOpenGLWidget, self).update()
 
-
-
+    ###
+    # LOADMATRICESTOSHADER
+    # Sets up the model view matrix and links it to our shaders
+    ###
     def loadMatricesToShader(self):
         shader = ShaderLib.instance()
 
@@ -75,13 +96,14 @@ class NGLWidget(QOpenGLWidget):
         M = self.mouseGlobalTX
         MV = self.cam.getViewMatrix() * M
         MVP = self.cam.getVPMatrix() * M
-        #normalMatrix = Mat3(MV)
-        #normalMatrix.inverse().transpose()
         shader.setUniform("MV", MV)
         shader.setUniform("MVP", MVP)
-        #shader.setUniform("normalMatrix", normalMatrix)
         shader.setUniform("M", M)
 
+    ###
+    # PAINTGL
+    # Draws the scene
+    ###
     def paintGL(self):
         glViewport(0, 0, self.width, self.height)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -93,12 +115,19 @@ class NGLWidget(QOpenGLWidget):
             self.flock.Draw(self.cam, shader)
 
 
-
+    ###
+    # RESIZEGL
+    # Handles with resizing the window
+    ###
     def resizeGL(self, w, h):
         self.width = int(w * self.devicePixelRatio())
         self.height = int(h * self.devicePixelRatio())
         self.cam.setShape(45.0, float(w) / h, 0.05, 350.0)
 
+    ###
+    # KEYPRESSEVENT
+    # Handles key press events
+    ###
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key_Escape:
@@ -113,7 +142,10 @@ class NGLWidget(QOpenGLWidget):
             self.modelPos.set(Vec3.zero())
 
         self.update()
-
+    ###
+    # MOUSEMOVEEVENT
+    # Handles mouse movement events
+    ###
     def mouseMoveEvent(self, event):
         if self.rotate and event.buttons() == Qt.LeftButton:
             diffx = event.x() - self.origX
@@ -133,7 +165,10 @@ class NGLWidget(QOpenGLWidget):
             self.modelPos.m_x += self.INCREMENT * diffX
             self.modelPos.m_y -= self.INCREMENT * diffY
             self.update()
-
+    ###
+    # MOUSEPRESSEVENT
+    # Handles mouse press events
+    ###
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.origX = event.x()
@@ -144,14 +179,20 @@ class NGLWidget(QOpenGLWidget):
             self.origXPos = event.x()
             self.origYPos = event.y()
             self.translate = True
-
+    ###
+    # MOUSERELEASEEVENT
+    # Handles mouse release events
+    ###
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.rotate = False
 
         elif event.button() == Qt.RightButton:
             self.translate = False
-
+    ###
+    # WHEELEVENT
+    # Handles mouse wheel events
+    ###
     def wheelEvent(self, event):
         numPixels = event.pixelDelta()
 
@@ -161,7 +202,11 @@ class NGLWidget(QOpenGLWidget):
         elif numPixels.x() < 0:
             self.modelPos.m_z -= self.ZOOM
         self.update()
-
+    ###
+    # TIMEREVENT
+    # Handles timer events
+    # Deals with updating the flock as well as the GUI
+    ###
     def timerEvent(self, QTimerEvent):
         if self.start == True:
             start = time.time()
@@ -171,7 +216,7 @@ class NGLWidget(QOpenGLWidget):
 
             end = time.time() - start
 
-            #print 'Time to update: ' + str(end) + 's'
+            # Update the window title to display correct information
             if self.flock.bestBoid == None:
                 self.parentWidget().setWindowTitle('Genetic Boids - Generation: ' + str(self.flock.m_genCount) + ' MiniGen: '
                              + str(self.flock.m_miniGenCount) + ' | ' + str(self.flock.ticks)
@@ -182,13 +227,18 @@ class NGLWidget(QOpenGLWidget):
                           + '/' + str(self.flock.maxTicks) + ' Fittest Boid: ' + self.flock.bestBoid.m_name)
 
         self.update()
-
+###
+# NGLWINDOW
+# The core class of the system, holds all the GUI elements and the core NGLWidget with the flock inside
+###
 class NGLWindow(QWidget):
 
     def __init__(self):
         super(NGLWindow, self).__init__()
 
         self.glWidget = NGLWidget(parent=self)
+
+        ### Setup GUI ###
 
         self.sideTabs = QTabWidget()
         self.tabOne = QGroupBox()
@@ -228,8 +278,6 @@ class NGLWindow(QWidget):
         self.boidNum.setMinimum(5)
         self.boidNum.setMaximum(75)
 
-
-
         self.vbox = QVBoxLayout()
         self.vbox.addWidget(self.BN)
         self.vbox.addWidget(self.boidNum)
@@ -248,7 +296,6 @@ class NGLWindow(QWidget):
 
         # Tab 2 - Predators
 
-
         self.PN = QLabel("Number of Predators")
         self.predNum = QSpinBox()
         self.predNum.setValue(5)
@@ -260,8 +307,6 @@ class NGLWindow(QWidget):
         self.predAt.setValue(2.0)
         self.predAt.setMinimum(0)
         self. predAt.setMaximum(10)
-
-
 
         self.PSi = QLabel("Sight Radius")
         self.predSig = QSpinBox()
@@ -293,7 +338,6 @@ class NGLWindow(QWidget):
         # Add Tab to Stack
 
         self.sideTabs.addTab(self.tabTwo, "Predators")
-
 
         # Tab 3 - Genetic Settings
 
@@ -344,11 +388,14 @@ class NGLWindow(QWidget):
         self.mainLayout.setStretch(1, 1)
         self.setLayout(self.mainLayout)
 
-
-
         self.setWindowTitle(
             'Genetic Boids - Generation: ' + str(0) + 'MiniGen: ' + str(0) + '| ' + str(0) + '/' + str(0))
 
+    ###
+    # STARTSIM
+    # Starts the simulation
+    # Loads all the GUI variables into the flock
+    ###
     def StartSim(self):
         self.glWidget.flock.startTired = self.genTired.value().__float__()
         self.glWidget.flock.startRecov = self.genRecov.value().__float__()
@@ -381,9 +428,6 @@ if __name__ == '__main__':
   format.setDepthBufferSize(24)
   # set that as the default format for all windows
   QSurfaceFormat.setDefaultFormat(format)
-
-
-
   window = NGLWindow()
   #window.setFormat(format)
   window.resize(1024,720)

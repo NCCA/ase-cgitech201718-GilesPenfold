@@ -1,3 +1,8 @@
+##################################################################################
+# Giles Penfold - s5005745 Genetic Flocking Simulation, MSc CAVE ASE 2017/8
+# Derived from the YABI implementation of flocking and processing.org
+# Base layout from the NGL library Python example
+####################### IMPORTS ##################################################
 import boid2
 import food
 from random import choice
@@ -5,14 +10,15 @@ from random import getrandbits
 from random import uniform
 import numpy as np
 import random
+###################### END IMPORTS ###############################################
 
+# Systems random number generator
 sys_random = random.SystemRandom()
 
-# TODO
-# Add overall fitness to the boids in relation to food and time spent alive
-# Set the target for the network as a distance away from the nearest predator
-# And closest to the nearest food
-
+###
+# FLOCK
+# The core class that handles the flocking simulation
+###
 class Flock():
 
     def __init__(self, *args, **kwargs):
@@ -24,11 +30,14 @@ class Flock():
         self.maxTicks = 2000
         self.m_maxBoids = 50
         self.m_maxPredators = 5
+
+        # Generation variables
         self.m_genCount = 0
         self.m_miniGenCount = 0
         self.m_survivorCount = []
         self.bestBoid = None
 
+        # Variables passed from GUI
         self.startAware = kwargs.get('_aware',5)
         self.startStr = kwargs.get('_str',0.2)
         self.startTired = kwargs.get('_tired',0.05)
@@ -42,11 +51,17 @@ class Flock():
         self.predSig = 25
         self.predSpeed = 0.35
 
-
+    ###
+    # FLOCK
+    # Calls the flocking algorithm on the boids
+    ###
     def Flock(self):
         self.m_boids[0].Flock(self.m_boids, self.m_predators, self.m_food, self.bestBoid)
 
-
+    ###
+    # UPDATE
+    # Updates the flocking simulation ticks and keeps track of
+    # The current time within each generation
     def Update(self):
         if self.ticks < self.maxTicks:
             self.m_boids[0].Move(self.m_boids, self.m_predators)
@@ -54,6 +69,11 @@ class Flock():
         elif self.ticks == self.maxTicks:
             self.MiniGeneration()
 
+    ###
+    # MINIGENERATION
+    # Calculates all the fitness variables for each boid at the end of a mini generation
+    # Resets the simulation for this generation and starts a new mini generation
+    ###
     def MiniGeneration(self):
 
         # Reward Survivors, Punish Dead
@@ -91,7 +111,11 @@ class Flock():
         if self.m_miniGenCount % 10 == 0:
             self.m_miniGenCount = 0
             self.NextGeneration()
-
+    ###
+    # NEXTGENERATION
+    # Handles all the switching between the last and next generation
+    # Kills off the worst boids, breeds the best boids
+    ###
     def NextGeneration(self):
 
         topTwenty = sorted(self.m_boids, key=lambda x: x.m_fitness, reverse=True)
@@ -146,10 +170,17 @@ class Flock():
             # Re-Add Predators
             self.AddPredator(self.m_maxPredators)
 
+    ###
+    # ADDFOOD
+    # Adds food to the simulation
+    ###
     def AddFood(self, _i):
         for x in range (0,_i):
             self.m_food.append(food.Food())
-
+    ###
+    # ADDBOID
+    # Adds boids to the flock
+    ###
     def AddBoid(self, _i):
         for x in range(0,_i):
             self.m_boids.append(boid2.Boid2(_id=x, _aware=random.uniform(1,self.startAware), _str=random.uniform(0.05,self.startStr), _rec=random.uniform(0,self.startRecov),
@@ -157,6 +188,10 @@ class Flock():
             random.seed(self.m_boids[x].GetRandomSeed())
             self.m_run.append(False)
 
+    ###
+    # BREEDBOIDS
+    # Randomly breeds variables between two selected boids
+    ###
     def BreedBoids(self, _mother, _father):
         if _mother != _father:
             strength = choice([_mother.m_strength, _father.m_strength])
@@ -176,6 +211,10 @@ class Flock():
                                             _align=align, _cohes=cohes, _sep=sep, _avoid=avoid, _random=rand,
                                             _food=food, _colour=np.array([1.0,0.4,6])))
 
+    ###
+    # MUTATEBOIDS
+    # Randomly mutates the variables within a boid
+    ###
     def MutateBoids(self, _boid):
         if bool(getrandbits(1)):
             strength = _boid.m_strength + uniform(-0.2,0.2)
@@ -226,11 +265,17 @@ class Flock():
                                         _tired=tired, _rec=recover, _aware=aware,
                                         _align=align, _cohes=cohes, _sep=sep, _avoid=avoid, _random=rand,
                                         _food=food,_colour=np.array([0,1,0])))
-
+    ###
+    # ADDPREDATOR
+    # Adds a predator to the simulation
+    ###
     def AddPredator(self, _i):
         for x in range(0,_i):
             self.m_predators.append(boid2.Boid2(_id=x, _predator=True, _predAtt=self.predAtt, _predSig=self.predSig, _predSpeed=self.predSpeed))
-
+    ###
+    # DRAW
+    # Draws everything contained within the flock
+    ###
     def Draw(self, _camera, _shader):
 
         for f in self.m_food:

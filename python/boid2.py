@@ -1,10 +1,14 @@
+##################################################################################
+# Giles Penfold - s5005745 Genetic Flocking Simulation, MSc CAVE ASE 2017/8
+# Derived from the YABI implementation of flocking and processing.org
+# Base layout from the NGL library Python example
+####################### IMPORTS ##################################################
 import numpy as np
 from pyngl import *
 import random
+###################### END IMPORTS ###############################################
 
-
-# Based from YABI implementation of flocking and processing.org
-
+# Random number generator
 sys_random = random.SystemRandom()
 
 # Boid Global Params
@@ -32,14 +36,22 @@ PredatorMinSeparation = 3
 # World Params - Do not change
 Borders = np.array([56,56])
 
-
+###
+# BOID2
+# The second version of the boid class with adjusted genetic attributes
+# This is the powerhouse of the flocking simulation
+###
 class Boid2():
 
     def __init__(self, *args, **kwargs):
+
+        # Use of Numpy arrays as there was a bug with the NGL operators
         self.m_id = kwargs.get('_id', 0)
         self.m_pos = kwargs.get('_pos', np.random.uniform(-50,50,2))
         self.m_vel = kwargs.get('_vel', np.zeros(2))
         self.m_acc = kwargs.get('_acc', np.zeros(2))
+
+        # Generate our own random seed because the random number generator is finickity at best
         random.seed(self.GetRandomSeed())
 
         self.m_name = self.RandomNameGenerator()
@@ -82,14 +94,22 @@ class Boid2():
         self.m_colour = kwargs.get('_colour', np.ones(3))
 
 
-
+    ###
+    # GETRANDOMSEED
+    # Randomly generates a seed to then feed back into the random generator to try
+    # and get something a bit more random
+    ###
     def GetRandomSeed(self):
         token = ''
         letters = "abcdefghiklmnopqrstuvwwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
         for i in range(1, 36):
             token = token + sys_random.choice(letters)
         return token
-
+    ###
+    # RANDOMNAMEGENERATOR
+    # The product of a conversation with a friend about naming the boids
+    # So I made a random name generator to make the simulation more fun
+    ###
     def RandomNameGenerator(self):
         name = ''
         description = ['Amazing', 'Wonderous', 'Outstanding', 'Powerful', 'Beautiful', 'Brave',
@@ -126,10 +146,18 @@ class Boid2():
         name = 'The ' + sys_random.choice(description) + ' ' + sys_random.choice(title) + ' ' + sys_random.choice(first) + ' ' + sys_random.choice(second) + ' of ' + sys_random.choice(place)
         return name
 
+    ###
+    # CAPVELOCITY
+    # This will stop the velocity going over a certain threshold
+    ###
     def CapVelocity(self, _mv):
         if(np.sqrt(self.m_vel.dot(self.m_vel))>_mv):
             self.m_vel = (self.m_vel/np.sqrt(self.m_vel.dot(self.m_vel)))*_mv
 
+    ###
+    # CENTEROFMASS
+    # Obtain the centre of mass of all the boids at the start of the frame
+    ###
     def CenterOfMass(self,_boids):
         com = np.zeros(2)
         count = 0
@@ -141,6 +169,10 @@ class Boid2():
             com[dim] = com[dim]/count
         return com
 
+    ###
+    # CENTREOFVELCOTY
+    # Obtains the centre of velocity of the boids at the start of the frame
+    ###
     def CenterOfVelocity(self,_boids):
         cov = np.zeros(2)
         count = 0
@@ -152,6 +184,12 @@ class Boid2():
             cov[dim] = cov[dim] / count
         return cov
 
+    ###
+    # BORDERING
+    # This stops the boids flying off into space and keeps them on screen
+    # This does however cause problems with tracking the centre of mass
+    # of the flock.
+    ###
     def Bordering(self):
         adj = 1.5
         if self.m_pos[0] < -Borders[0]-2:
@@ -162,21 +200,25 @@ class Boid2():
             self.m_pos[0] = -Borders[0]
         if self.m_pos[1] < -Borders[1]/adj-1:
             self.m_pos[1] = Borders[1]/adj
-        # if self.m_pos[0] < -Borders[0]:
-        #     self.m_vel[0] += 5
-        # if self.m_pos[0] > Borders[0]:
-        #     self.m_vel[0] += -5
-        # if self.m_pos[1] < -Borders[1]:
-        #     self.m_vel[1] += 5
-        # if self.m_pos[1] > Borders[1]:
-        #     self.m_vel[1] += -5
 
+    ###
+    # SEEK
+    # Changes the acceleration towards a certain point on the map
+    ###
     def Seek(self, _target):
         self.m_acc += self.Steer(_target, False)
 
+    ###
+    # ARRIVE
+    # Changes the acceleration based on if the boid has arrived at the target destination
+    ###
     def Arrive(self, _target):
         self.m_acc += self.Steer(_target, True)
 
+    ###
+    # LIMIT
+    # Performs a limit on the speed of the boids from a given input
+    ###
     def Limit(self, _input, _val):
         _return = np.zeros(2)
         # Magnitude
@@ -187,6 +229,10 @@ class Boid2():
             _return = _return * MaxSpeed
         return _return
 
+    ###
+    # NORMALIZE
+    # Performs normalization
+    ###
     def Normalize(self, _input):
         _return = _input
         mag = np.sqrt(_input.dot(_input))
@@ -194,6 +240,12 @@ class Boid2():
             _return = _return / mag
         return _return
 
+    ###
+    # STEER
+    # Steers the boids towards a certain position
+    # The original YABI implementation used a value of 100 to divide by
+    # However any value can be used. 100 worked well for this simulation.
+    ###
     def Steer(self, _target, _slow, _force):
         loc = _target - self.m_pos
         dist = np.sqrt(loc.dot(loc))
@@ -211,6 +263,12 @@ class Boid2():
             SVec = np.zeros(2)
         return SVec
 
+    ###
+    # MOVE
+    # This will move the boids once all the initial calculations on vel and acc
+    # Have been completed. It will then apply the strength and running of the boids
+    # As well as calculating the tiredness
+    ###
     def Move(self, _boids, _predators):
         for b in _boids:
             if b.m_dead == False:
@@ -236,8 +294,6 @@ class Boid2():
 
                 b.m_pos += b.m_vel
 
-
-
         if len(_predators) > 0:
             for p in _predators:
                 p.m_acc += p.Steer(np.array([0, 0]), False, 0.008)
@@ -246,20 +302,25 @@ class Boid2():
                 p.m_vel = p.Limit(p.m_vel, p.PredatorMaxSpeed)
                 p.m_pos = p.m_pos + p.m_vel
 
-
                 p.Bordering()
 
+    ###
+    # FLOCK
+    # The core function that calculates all the flocking in the system.
+    ###
     def Flock(self, _boids, _predators, _food, _best):
 
-
+        # Handle predators first
         if len(_predators) > 0:
             for p in _predators:
 
                 # Reset Acceleration
                 p.m_acc = np.zeros(2)
 
-                # Rule 1 - Cohesion
-                #pCohesion = (COMBOIDS - p.m_pos)*PredatorWeightCohesion
+                # These could be optimised but would show minimal speedup
+                # With the small number of predators
+
+                # Rule 1a - Cohesion to the boids
                 count = 0
                 pCohesion = np.zeros(2)
                 for b2 in _boids:
@@ -274,6 +335,7 @@ class Boid2():
                     pCohesion = p.Steer(pCohesion, False, MaxForce)
                 pCohesion = pCohesion * PredatorWeightCohesion
 
+                # Rule 1b - Cohesion to themselves
                 count = 0
                 pPCohesion = np.zeros(2)
                 for b2 in _predators:
@@ -333,9 +395,10 @@ class Boid2():
                 # Extra Rule 5 - Randomness
                 randomness = np.random.uniform(-1, 1, 2) * PredatorWeightRandom
 
-
+                # Apply these to the acceleration
                 p.m_acc += pCohesion +  pSeparation + pAlignment+ randomness + pPCohesion
 
+        # Next we do all the boids
         for b in _boids:
             if b.m_dead == False:
 
@@ -431,20 +494,21 @@ class Boid2():
                         if f.m_stock <= FoodCutoff:
                             f.Reset()
 
-
+                # Apply our calculations to the acceleration
                 if b.m_dead == False:
                     b.m_acc += separation + alignment + cohesion + randomness +  flee + bFood
                 else:
                     b.m_colour = np.array([0.5,0.5,0.5])
 
-                #if np.linalg.norm(b.m_vel) == 0:
-                #    b.m_vel = np.array(MaxSpeed,MaxSpeed)
 
+    ###
+    # DRAW
+    # Draw the scene
+    ###
     def Draw(self, _camera):
         shader = ShaderLib.instance()
 
         t = Transformation()
-        #t.setRotation(0,self.m_acc[0]*100,(self.m_acc[1]*100))
         if self.m_isPredator:
             t.setScale(3,3,3)
         t.setPosition(self.m_pos[0], self.m_pos[1], 0)
@@ -452,10 +516,8 @@ class Boid2():
         M = t.getMatrix()
         MV = _camera.getViewMatrix()*M
         MVP = _camera.getVPMatrix()*M
-        #normalMatrix=MV
 
         shader.setUniform("MVP", MVP)
-        #shader.setUniform("normalMatrix", normalMatrix)
 
         prim = VAOPrimitives.instance()
         if self.m_isPredator:
